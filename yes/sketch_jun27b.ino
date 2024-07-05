@@ -46,11 +46,10 @@ void setup() {
   Serial.print("\nIP address: ");
   Serial.println(Actual_IP);
 
-  // При попытке доступа к странице IP/, будет вызываться функция SendWebsite.
+  // При попытке доступа к странице IP/xml, будет вызываться функция SendXML и тд.
   server.on("/", SendWebsite);
   server.on("/xml", SendXML);
   server.on("/UPDATE_RPM", UpdateRPM);
-  server.on("/UPDATE_RPM_BUTTON", UpdateRPMButton);
   server.on("/STATE_BUTTON", ProcessState);
   server.on("/REVERSE_BUTTON", ProcessReverse);
 
@@ -74,7 +73,7 @@ void SendWebsite() {
 void SendXML() {
   Serial.println("Sending XML!");
   strcpy(XML, "<?xml version='1.0'?>\n<Data>\n");
-  sprintf(buf, "<RMP>%d</RMP>\n", BitsA0);
+  sprintf(buf, "<RMP>%d</RMP>\n", Motor_speed);
   strcat(XML, buf);
   sprintf(buf, "<CURR>%d</CURR>\n", BitsA0);
   strcat(XML, buf);
@@ -87,25 +86,10 @@ void SendXML() {
 }
 
 void UpdateRPM() {
-  String t_state = server.arg("VALUE");
+  String new_speed = server.arg("VALUE");
 
-  Motor_speed = t_state.toInt();
-  Serial.print("UpdateSlider"); Serial.println(Motor_speed);
-
-  ledcWrite(0, Motor_speed);
-  // server.send(200, "text/plain", "");
-
-  sprintf(buf, "%d", Motor_speed);
-  server.send(200, "text/plain", buf);
-}
-
-void UpdateRPMButton() {
-  String t_state = server.arg("VALUE");
-
-  Motor_speed = t_state.toInt();
-  Serial.print("UpdateSlider"); Serial.println(Motor_speed);
-
-  ledcWrite(0, Motor_speed);
+  Motor_speed = new_speed.toInt();
+  Serial.print("UpdateSlider "); Serial.println(Motor_speed);
 
   sprintf(buf, "%d", Motor_speed);
   server.send(200, "text/plain", buf);
@@ -114,18 +98,15 @@ void UpdateRPMButton() {
 void ProcessState() {
   Motor_is_on ^= 1;
   sprintf(buf, "%s", (Motor_is_on ? "ON" : "OFF"));
-  server.send(200, "text/plain", "");
+  server.send(200, "text/plain", buf);
 }
 
 void ProcessReverse() {
   int temp = Motor_speed;
-  Serial.println("Start button Pressed!");
-  while (Motor_speed > 10) {
-    Motor_speed -= 10
-  }
-  // Stop motor. Reverse diff.
-  while (Motor_speed < temp - 10) {
-    Motor_speed += 10;
-  }
-  server.send(200, "text/plain", "");
+  Serial.println("Reverse button Pressed!");
+  while (Motor_speed > 10) Motor_speed -= 10;
+  Motor_speed = 0;
+  while (Motor_speed < temp - 10) Motor_speed += 10;
+  Motor_speed = temp;
+  server.send(200, "text/plain", "DONE");
 }

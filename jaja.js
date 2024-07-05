@@ -1,12 +1,12 @@
 var xml = createXmlHttpObject();
 var speed_button = 0;
+var time_hour = 0;
+var time_min = 0;
+var time_sec = 0;
 
 function createXmlHttpObject() {
-  if (window.XMLHttpRequest) {
-    xml = new XMLHttpRequest();
-  } else {
-    xml = new ActiveXObject("Microsoft.XMLHTTP");
-  }
+  if (window.XMLHttpRequest) { xml = new XMLHttpRequest(); }
+  else { xml = new ActiveXObject("Microsoft.XMLHTTP"); }
   return xml;
 }
 
@@ -24,25 +24,31 @@ function StateButton() {
 
 function ReverseButton() {
   var xhttp = new XMLHttpRequest();
+  document.getElementById("REVERSE-BUTTON").disabled = true;
+  xhttp.onreadystatechange = function () {
+    if (this.readyState == 4 && this.status == 200 && this.responseText === "DONE")
+      document.getElementById("REVERSE-BUTTON").disabled = false;
+  };
   xhttp.open("PUT", "REVERSE_BUTTON", false);
   xhttp.send();
 }
 
 function UpdateRPM(value) {
   var xhttp = new XMLHttpRequest();
-  if (value < 0) value = 0;
-  if (value > 255) value = 255;
-  speed_button = value;
+  UpdateRPMInput(value);
   xhttp.onreadystatechange = function () {
     if (this.readyState == 4 && this.status == 200) {
+      speed_button = this.responseText;
       document.getElementById("RPM").innerHTML = this.responseText;
+      document.getElementById("RPM-SLIDE").value = this.responseText;
+      document.getElementById("RPM-INPUT").value = this.responseText;
     }
   };
-  document.getElementById("RPM").innerHTML = value;
-  document.getElementById("RPM-BUTT").value = value;
-  document.getElementById("RPM-SLIDE").value = value;
-  xhttp.open("PUT", "UPDATE_RPM?VALUE=" + value, true);
+  xhttp.open("PUT", "UPDATE_RPM?VALUE=" + speed_button, true);
   xhttp.send();
+  document.getElementById("RPM").innerHTML = speed_button;
+  document.getElementById("RPM-SLIDE").value = speed_button;
+  document.getElementById("RPM-INPUT").value = speed_button;
 }
 
 function UpdateRPMInput(value) {
@@ -51,18 +57,16 @@ function UpdateRPMInput(value) {
   speed_button = value;
 }
 
-function UpdateRPMButton() {
-  UpdateRPM(speed_button);
-}
+function UpdateRPMButton() { UpdateRPM(speed_button); }
+function UpdateHour(value) { time_hour = value; }
+function UpdateMin(value) { time_min = value; }
+function UpdateSec(value) { time_sec = value; }
 
 function response() {
   var message;
-  var barwidth;
-  var currentsensor;
   var xmlResponse;
   var xmldoc;
   var dt = new Date();
-  var color = "#e8e8e8";
   xmlResponse = xml.responseXML;
   document.getElementById("TIME").innerHTML = dt.toLocaleTimeString();
   document.getElementById("DATE").innerHTML = dt.toLocaleDateString();
