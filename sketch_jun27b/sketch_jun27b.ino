@@ -1,29 +1,45 @@
+// Для создания web-приложения.
 #include <WiFi.h>
 #include <WebServer.h>
+// Пользовательский файл, содержащий строку, содержащую html сайта.
 #include <web-html.h>
 
+// Для подключения датчика силы тока и напряжения INA219.
+#include <Wire.h>
+#include <Adafruit_INA219.h>
+
+// Пины для управления мотором спомощью L298N.
+// Пин 3 отвечает за управление скоростью мотора.
+#define PIN_MOTOR_SPEED 3
+// Пины 4-5 отвечают за направление вращения мотора.
+#define PIN_MOTOR_1 4
+#define PIN_MOTOR_2 5
+
 // С этими данными будет создана точка доступа.
-#define APP_SSID "ESP32 TEST"
-#define APP_PASS "1234567890"
+const char *APP_SSID = "ESP32 TEST"; 
+const char *APP_PASS = "1234567890";
 
-#define PIN_A0 34 // Для теста. Пин 34
-#define PIN_A1 35 // Для теста. Пин 35
+// Объект ina219, который используется для получения данных
+// с физического сенсора посредством методов класса.
+Adafruit_INA219 Sensor;
 
-int BitsA0 = 0, BitsA1 = 0;
+float Voltage_V = 0;
+float Current_mA = 0;
+
+// Задаёт время, через которое будет обнавляться информация с датчика тока.
+const uint8_t SensorUpdateTime = 50; 
 uint32_t SensorUpdate = 0;
 
-int Motor_speed = 0;
+uint8_t Motor_Speed = 0;
+bool Motor_On = false;
 
-bool Motor_is_on = false;
-bool Motor_Rotation = false; // false -- по часовой стрелке. true - против.
+enum class Rotation : byte { CLOCKWISE = 0, ANTI_CLOCKWISE = 1 };
+Rotation Motor_Rotation = Rotation::CLOCKWISE; // false -- по часовой стрелке. true - против.
 
 char XML[2048];
 char buf[32];
 
-// IP, используемый для дебага. Будет распределен сторонним роутером.
-IPAddress Actual_IP;
-
-// Информация для собственной точки доступа ESP32.
+// Информация для точки доступа ESP32.
 IPAddress PageIP(192, 168, 1, 1);
 IPAddress gateway(192, 168, 1, 1);
 IPAddress subnet(255, 255, 255, 0);
@@ -32,21 +48,26 @@ IPAddress ip;
 WebServer server(80);
 
 void setup() {
-  Serial.begin(115200);
-
   disableCore1WDT();
 
-  Serial.println("Starting Server!");
+  // Установка всех управляющих пинов в режим выхода
+  pinMode(PIN_MOTOR_SPEED, OUTPUT);
+  pinMode(PIN_MOTOR_1, OUTPUT);
+  pinMode(PIN_MOTOR_2, OUTPUT);
+  // Команда остановки
+  digitalWrite(PIN_MOTOR_1, LOW);
+  digitalWrite(PIN_MOTOR_2, LOW);
+
+  // Проверка на наличие INA219
+  //if (! Sensor.begin()) {
+  //  while (1) { delay(10); }
+  //}
 
   WiFi.softAP(APP_SSID, APP_PASS);
   delay(500);
   WiFi.softAPConfig(PageIP, gateway, subnet);
   delay(100);
-  Actual_IP = WiFi.softAPIP();
-  Serial.print("\nIP address: ");
-  Serial.println(Actual_IP);
 
-  // При попытке доступа к странице IP/xml, будет вызываться функция SendXML и тд.
   server.on("/", SendWebsite);
   server.on("/xml", SendXML);
   server.on("/UPDATE_RPM", UpdateRPM);
@@ -57,56 +78,79 @@ void setup() {
 }
 
 void loop() {
-  if ((millis() - SensorUpdate) >= 50) {
+  if ((millis() - SensorUpdate) >= SensorUpdateTime) {
     SensorUpdate = millis();
-    BitsA0 = analogRead(PIN_A0);
-    BitsA1 = analogRead(PIN_A1);
+    Voltage_V = Sensor.getBusVoltage_V();
+    Current_mA = Sensor.getCurrent_mA();
   }
   server.handleClient();
 }
 
 void SendWebsite() {
-  Serial.println("Sending WebPage!");
-  server.send(200, "text/html", PAGE_MAIN);  // Tickle Tickle Tickle
+  server.send(200, "text/html", PAGE_MAIN);
 }
 
 void SendXML() {
-  Serial.println("Sending XML!");
   strcpy(XML, "<?xml version='1.0'?>\n<Data>\n");
-  sprintf(buf, "<RMP>%d</RMP>\n", Motor_speed);
+  sprintf(buf, "<RPM>%d</RPM>\n", Motor_Speed);
   strcat(XML, buf);
-  sprintf(buf, "<CURR>%d</CURR>\n", BitsA0);
+  sprintf(buf, "<VOLT>%d</VOLT>\n", Voltage_V);
   strcat(XML, buf);
-  sprintf(buf, "<DIFF>%d</DIFF>\n", BitsA1);
+  sprintf(buf, "<CURR>%d</CURR>\n", Current_mA);
   strcat(XML, buf);
   sprintf(buf, "</Data>");
   strcat(XML, buf);
-  Serial.println(XML);
   server.send(200, "text/xml", XML);
 }
 
 void UpdateRPM() {
   String new_speed = server.arg("VALUE");
-
-  Motor_speed = new_speed.toInt();
-  Serial.print("UpdateSlider "); Serial.println(Motor_speed);
-
-  sprintf(buf, "%d", Motor_speed);
+  Motor_Speed = new_speed.toInt();
+  analogWrite(PIN_MOTOR_SPEED, Motor_Speed);
+  sprintf(buf, "%d", Motor_Speed);
   server.send(200, "text/plain", buf);
 }
 
 void ProcessState() {
-  Motor_is_on ^= 1;
-  sprintf(buf, "%s", (Motor_is_on ? "ON" : "OFF"));
+  Motor_On ^= 1;
+  if (Motor_On == false) {
+    digitalWrite(PIN_MOTOR_1, LOW); 
+    digitalWrite(PIN_MOTOR_2, LOW);
+  }
+  else {
+    MotorRotation();   
+  }
+  sprintf(buf, "%s", (Motor_On ? "ON" : "OFF"));
   server.send(200, "text/plain", buf);
 }
 
 void ProcessReverse() {
-  int temp = Motor_speed;
-  Serial.println("Reverse button Pressed!");
-  while (Motor_speed > 10) Motor_speed -= 10;
-  Motor_speed = 0;
-  while (Motor_speed < temp - 10) Motor_speed += 10;
-  Motor_speed = temp;
+  int temp = Motor_Speed;
+  while (Motor_Speed > 10) {
+    Motor_Speed -= 10;
+    delay(10);
+  }
+  Motor_Speed = 0;
+  Motor_Rotation = static_cast<Rotation>((int)Motor_Rotation ^ 1);
+  MotorRotation();
+  delay(100);
+  while (Motor_Speed < temp - 10) {
+    Motor_Speed += 10;
+    delay(10);
+  }
+  Motor_Speed = temp;
   server.send(200, "text/plain", "DONE");
+}
+
+void MotorRotation() {
+  switch (Motor_Rotation) {
+    case (Rotation::CLOCKWISE):
+      digitalWrite(PIN_MOTOR_1, LOW);
+      digitalWrite(PIN_MOTOR_2, HIGH);
+      break;
+    case (Rotation::ANTI_CLOCKWISE):
+      digitalWrite(PIN_MOTOR_1, HIGH);
+      digitalWrite(PIN_MOTOR_2, LOW);
+      break;
+    }
 }
