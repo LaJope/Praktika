@@ -15,9 +15,17 @@
 #define PIN_MOTOR_1 4
 #define PIN_MOTOR_2 5
 
+// Используется для дебага.
+// Чтобы перейти к собственной точке доступа ESP закомментируйте #define строку 
+#define ESP_DEBUG
+const char *LOCAL_SSID = "DancingCow";
+const char *LOCAL_PASS = "perfectwe";
+
 // С этими данными будет создана точка доступа.
 const char *APP_SSID = "ESP32 TEST"; 
 const char *APP_PASS = "1234567890";
+
+const uint16_t SpeedChangeTime = 200;
 
 // Объект ina219, который используется для получения данных
 // с физического сенсора посредством методов класса.
@@ -34,10 +42,13 @@ uint8_t Motor_Speed = 0;
 bool Motor_On = false;
 
 enum class Rotation : byte { CLOCKWISE = 0, ANTI_CLOCKWISE = 1 };
-Rotation Motor_Rotation = Rotation::CLOCKWISE; // false -- по часовой стрелке. true - против.
+Rotation Motor_Rotation = Rotation::CLOCKWISE;
 
 char XML[2048];
 char buf[32];
+
+// IP адрес для дебага
+IPAddress Actual_IP;
 
 // Информация для точки доступа ESP32.
 IPAddress PageIP(192, 168, 1, 1);
@@ -48,6 +59,8 @@ IPAddress ip;
 WebServer server(80);
 
 void setup() {
+  Serial.begin(115200);
+
   disableCore1WDT();
 
   // Установка всех управляющих пинов в режим выхода
@@ -55,6 +68,7 @@ void setup() {
   pinMode(PIN_MOTOR_1, OUTPUT);
   pinMode(PIN_MOTOR_2, OUTPUT);
   // Команда остановки
+  analogWrite(PIN_MOTOR_SPEED, 0);
   digitalWrite(PIN_MOTOR_1, LOW);
   digitalWrite(PIN_MOTOR_2, LOW);
 
@@ -63,10 +77,20 @@ void setup() {
   //  while (1) { delay(10); }
   //}
 
+#ifdef ESP_DEBUG
+  WiFi.begin(LOCAL_SSID, LOCAL_PASS);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500); 
+  }
+  Serial.print("IP address: "); Serial.println(WiFi.localIP());
+#endif
+
+#ifndef ESP_DEBUG
   WiFi.softAP(APP_SSID, APP_PASS);
   delay(500);
   WiFi.softAPConfig(PageIP, gateway, subnet);
   delay(100);
+#endif
 
   server.on("/", SendWebsite);
   server.on("/xml", SendXML);
@@ -114,6 +138,8 @@ void UpdateRPM() {
 void ProcessState() {
   Motor_On ^= 1;
   if (Motor_On == false) {
+    Motor_Speed = 0;
+    analogWrite(PIN_MOTOR_SPEED, Motor_Speed);
     digitalWrite(PIN_MOTOR_1, LOW); 
     digitalWrite(PIN_MOTOR_2, LOW);
   }
@@ -125,21 +151,35 @@ void ProcessState() {
 }
 
 void ProcessReverse() {
+  Serial.println("Reverse START");
   int temp = Motor_Speed;
-  while (Motor_Speed > 10) {
-    Motor_Speed -= 10;
-    delay(10);
-  }
-  Motor_Speed = 0;
+  SlowDown(0);
   Motor_Rotation = static_cast<Rotation>((int)Motor_Rotation ^ 1);
   MotorRotation();
-  delay(100);
-  while (Motor_Speed < temp - 10) {
-    Motor_Speed += 10;
-    delay(10);
-  }
-  Motor_Speed = temp;
+  delay(SpeedChangeTime);
+  SpeedUp(temp);
   server.send(200, "text/plain", "DONE");
+  Serial.println("Reverse STOP");
+}
+
+void SpeedUp(uint8_t aim_speed) {
+  aim_speed = (aim_speed > 255) ? 255 : aim_speed;
+  while (Motor_Speed < aim_speed - 10) {
+    Motor_Speed += 10;
+    analogWrite(PIN_MOTOR_SPEED, 0);
+    delay(SpeedChangeTime);
+  }
+  Motor_Speed = aim_speed;
+}
+
+void SlowDown(uint8_t aim_speed) {
+  aim_speed = (aim_speed < 0) ? 0 : aim_speed;
+  while (Motor_Speed > aim_speed + 10) {
+    Motor_Speed -= 10;
+    analogWrite(PIN_MOTOR_SPEED, 0);
+    delay(SpeedChangeTime);
+  }
+  Motor_Speed = aim_speed;
 }
 
 void MotorRotation() {

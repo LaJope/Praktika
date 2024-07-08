@@ -149,6 +149,13 @@ td {
   border: solid 2px;
 }
 
+.control-button:disabled,
+.control-button[disabled] {
+  border: 1px solid #999999;
+  background-color: #cccccc;
+  color: #666666;
+}
+
 .fixed-bottom {
   position: fixed;
   bottom: 0px;
@@ -187,11 +194,15 @@ td {
 }
     </style>
     <script type="text/javascript">
-    var xml = createXmlHttpObject();
+ var xml = createXmlHttpObject();
 var speed_button = 0;
 var time_hour = 0;
 var time_min = 0;
 var time_sec = 0;
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 function createXmlHttpObject() {
   if (window.XMLHttpRequest) {
@@ -224,9 +235,23 @@ function ReverseButton() {
       this.responseText === "DONE"
     )
       document.getElementById("REVERSE-BUTTON").disabled = false;
+    sleep(100);
   };
   xhttp.open("PUT", "REVERSE_BUTTON", false);
   xhttp.send();
+}
+
+var start_slider_speed = 0;
+function SliderMouseDown(value) {
+  start_slider_speed = value;
+}
+function SliderMouseUp(value) {
+  UpdateRPM(value);
+}
+function UpdateRPMSlider(value) {
+  if (Math.abs(start_slider_speed - value) % 10 == 0) {
+    UpdateRPM(value);
+  }
 }
 
 function UpdateRPM(value) {
@@ -234,10 +259,8 @@ function UpdateRPM(value) {
   UpdateRPMInput(value);
   xhttp.onreadystatechange = function () {
     if (this.readyState == 4 && this.status == 200) {
-      speed_button = this.responseText;
-      document.getElementById("RPM").innerHTML = this.responseText;
-      document.getElementById("RPM-SLIDE").value = Number(this.responseText);
-      document.getElementById("RPM-INPUT").value = Number(this.responseText);
+      speed_button = Number(this.responseText);
+      document.getElementById("RPM-INPUT").value = speed_button;
     }
   };
   xhttp.open("PUT", "UPDATE_RPM?VALUE=" + speed_button, true);
@@ -275,6 +298,7 @@ function response() {
   xmldoc = xmlResponse.getElementsByTagName("RPM");
   message = xmldoc[0].firstChild.nodeValue;
   document.getElementById("RPM").innerHTML = message;
+  UpdateRPMOnRefresh(message);
 
   xmldoc = xmlResponse.getElementsByTagName("VOLT");
   message = xmldoc[0].firstChild.nodeValue;
@@ -285,15 +309,27 @@ function response() {
   document.getElementById("CURR").innerHTML = message;
 }
 
+var UpdateRPMOnRefresh = (function () {
+  var executed = false;
+  return function (message) {
+    if (!executed) {
+      executed = true;
+      document.getElementById("RPM-SLIDER").innerHTML = message;
+      document.getElementById("RPM-INPUT").innerHTML = message;
+    }
+  };
+})();
+
 function process() {
   if (xml.readyState == 0 || xml.readyState == 4) {
     xml.open("PUT", "xml", true);
     xml.onreadystatechange = response;
-    xml.send(null);
+    xml.send();
   }
-  setTimeout("process()", 100);
+  setTimeout("process()", 50);
 }
-</script>
+
+  </script>
   </head>
 
   <body style="background-color: #eeeeee" onload="process()">
@@ -349,7 +385,9 @@ function process() {
               value="0"
               width="0%"
               id="RPM-SLIDE"
-              oninput="UpdateRPM(this.value)"
+              onmousedown="SliderMouseDown(this.value)"
+              onmouseup="SliderMouseUp(this.value)"
+              oninput="UpdateRPMSlider(this.value)"
             />
             <input
               type="number"

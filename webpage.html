@@ -61,7 +61,9 @@
               value="0"
               width="0%"
               id="RPM-SLIDE"
-              oninput="UpdateRPM(this.value)"
+              onmousedown="SliderMouseDown(this.value)"
+              onmouseup="SliderMouseUp(this.value)"
+              oninput="UpdateRPMSlider(this.value)"
             />
             <input
               type="number"

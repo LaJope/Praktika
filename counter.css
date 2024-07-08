@@ -141,6 +141,13 @@ td {
   border: solid 2px;
 }
 
+.control-button:disabled,
+.control-button[disabled] {
+  border: 1px solid #999999;
+  background-color: #cccccc;
+  color: #666666;
+}
+
 .fixed-bottom {
   position: fixed;
   bottom: 0px;
