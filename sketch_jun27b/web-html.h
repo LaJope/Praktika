@@ -1,15 +1,17 @@
-const char PAGE_MAIN[] PROGMEM = R"=====(
+const char PAGE_MAIN[] PROGMEM = R"=====(<!DOCTYPE html>
 <!DOCTYPE html>
 <html lang="ru" class="js-focus-visible">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=2.0" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
+    />
     <title>Панель управления барабанной установкой</title>
     <style>
     html {
   font-family: Arial, Helvetica, sans-serif;
 }
-
 .footer {
   width: 100%;
   display: flex;
@@ -22,7 +24,6 @@ const char PAGE_MAIN[] PROGMEM = R"=====(
   border-radius: 10px;
   background-color: blanchedalmond;
 }
-
 .header {
   width: 100%;
   display: flex;
@@ -34,7 +35,6 @@ const char PAGE_MAIN[] PROGMEM = R"=====(
   border-radius: 10px;
   background-color: blanchedalmond;
 }
-
 .fixed-top {
   position: fixed;
   top: 0;
@@ -42,13 +42,11 @@ const char PAGE_MAIN[] PROGMEM = R"=====(
   left: 0;
   z-index: 1030;
 }
-
 .header-title {
   font-size: 35px;
   font-weight: 600;
   text-wrap: inherit;
 }
-
 .time-and-date {
   display: grid;
   grid-template: 2 2;
@@ -57,16 +55,13 @@ const char PAGE_MAIN[] PROGMEM = R"=====(
   font-weight: 500;
   text-align: center;
 }
-
 .heading {
   grid-row: 1;
   text-wrap: nowrap;
 }
-
 .header-data {
   grid-row: 2;
 }
-
 .container {
   margin-top: 170px;
   margin-bottom: 200px;
@@ -76,26 +71,22 @@ const char PAGE_MAIN[] PROGMEM = R"=====(
   justify-content: center;
   column-gap: 40px;
 }
-
 .category {
   display: grid;
   justify-content: center;
   text-align: center;
   margin-bottom: 40px;
 }
-
 .category-title {
   font-size: 30px;
   font-weight: 600;
 }
-
 .param-div,
 table {
   border: solid 2px;
   border-radius: 10px;
   text-align: center;
 }
-
 th {
   padding: 5px;
   font-weight: 600;
@@ -103,40 +94,33 @@ th {
   border: 1px solid;
   border-radius: 10px;
 }
-
 td {
   padding: 5px;
   background-color: blanchedalmond;
   border: 1px solid;
   border-radius: 10px;
 }
-
 .param-div {
   padding: 10px;
   background-color: blanchedalmond;
 }
-
 .rpm-slider {
   display: block;
   width: 100%;
   background: red;
 }
-
 .category-text {
   margin-bottom: 5px;
 }
-
 .control-panel {
   display: grid;
   justify-content: center;
   text-align: center;
   margin-bottom: 0px;
 }
-
 .control-el {
   padding: 10px 0px;
 }
-
 .control-button {
   width: 80%;
   padding: 6px;
@@ -148,20 +132,17 @@ td {
   border-radius: 10px;
   border: solid 2px;
 }
-
 .control-button:disabled,
 .control-button[disabled] {
   border: 1px solid #999999;
   background-color: #cccccc;
   color: #666666;
 }
-
 .fixed-bottom {
   position: fixed;
   bottom: 0px;
   z-index: 1030;
 }
-
 .time-input {
   display: inline-block;
   width: 60px;
@@ -170,7 +151,6 @@ td {
   border: solid 2px;
   border-radius: 10px;
 }
-
 .rpm-input {
   display: inline-block;
   width: 60px;
@@ -179,7 +159,6 @@ td {
   border: solid 2px;
   border-radius: 10px;
 }
-
 .rpm-button {
   display: inline-block;
   width: 60%;
@@ -192,17 +171,30 @@ td {
   border-radius: 10px;
   border: solid 2px;
 }
-    </style>
+.time-control {
+  display: flex;
+  justify-content: center;
+  margin-top: 10px;
+  column-gap: 20px;
+}
+.time-button {
+  background-color: white;
+  border: solid 2px black;
+  border-radius: 10px;
+  padding: 4px 8px;
+  font-weight: 600;
+}
+.time-left {
+  margin-top: 10px;
+}
+</style>
     <script type="text/javascript">
- var xml = createXmlHttpObject();
+    var xml = createXmlHttpObject();
 var speed_button = 0;
 var time_hour = 0;
 var time_min = 0;
 var time_sec = 0;
-
-function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
+var motor_state = "OFF";
 
 function createXmlHttpObject() {
   if (window.XMLHttpRequest) {
@@ -215,12 +207,6 @@ function createXmlHttpObject() {
 
 function StateButton() {
   var xhttp = new XMLHttpRequest();
-  xhttp.onreadystatechange = function () {
-    if (this.readyState == 4 && this.status == 200) {
-      document.getElementById("STATE-BUTTON").innerHTML =
-        this.responseText == "ON" ? "Старт" : "Стоп";
-    }
-  };
   xhttp.open("PUT", "STATE_BUTTON", false);
   xhttp.send();
 }
@@ -241,15 +227,23 @@ function ReverseButton() {
   xhttp.send();
 }
 
+function checkSpeed(value) {
+  if (value < 0) value = 0;
+  if (value > 255) value = 255;
+  return value;
+}
+
 var start_slider_speed = 0;
 function SliderMouseDown(value) {
-  start_slider_speed = value;
+  start_slider_speed = checkSpeed(value);
 }
 function SliderMouseUp(value) {
-  UpdateRPM(value);
+  UpdateRPM(checkSpeed(value));
 }
 function UpdateRPMSlider(value) {
-  if (Math.abs(start_slider_speed - value) % 10 == 0) {
+  value = checkSpeed(value);
+  document.getElementById("RPM-SPAN").innerHTML = value;
+  if (Math.abs(start_slider_speed - value) % 8 == 0) {
     UpdateRPM(value);
   }
 }
@@ -268,11 +262,8 @@ function UpdateRPM(value) {
 }
 
 function UpdateRPMInput(value) {
-  if (value < 0) value = 0;
-  if (value > 255) value = 255;
-  speed_button = value;
+  speed_button = checkSpeed(value);
 }
-
 function UpdateRPMButton() {
   UpdateRPM(speed_button);
 }
@@ -284,6 +275,24 @@ function UpdateMin(value) {
 }
 function UpdateSec(value) {
   time_sec = value;
+}
+
+function SetTimer() {
+  var xhttp = new XMLHttpRequest();
+  xhttp.open(
+    "PUT",
+    "SET_TIMER?VALUE=" + (time_hour * 3600 + time_min * 60 + time_sec),
+    true
+  );
+  xhttp.send();
+}
+function DisableTimer() {
+  var xhttp = new XMLHttpRequest();
+  xhttp.open("PUT", "DISABLE_TIMER", true);
+  document.getElementById("TIME-HOUR").value = "0";
+  document.getElementById("TIME-MIN").value = "0";
+  document.getElementById("TIME-SEC").value = "0";
+  xhttp.send();
 }
 
 function response() {
@@ -298,7 +307,6 @@ function response() {
   xmldoc = xmlResponse.getElementsByTagName("RPM");
   message = xmldoc[0].firstChild.nodeValue;
   document.getElementById("RPM").innerHTML = message;
-  UpdateRPMOnRefresh(message);
 
   xmldoc = xmlResponse.getElementsByTagName("VOLT");
   message = xmldoc[0].firstChild.nodeValue;
@@ -307,18 +315,20 @@ function response() {
   xmldoc = xmlResponse.getElementsByTagName("CURR");
   message = xmldoc[0].firstChild.nodeValue;
   document.getElementById("CURR").innerHTML = message;
-}
 
-var UpdateRPMOnRefresh = (function () {
-  var executed = false;
-  return function (message) {
-    if (!executed) {
-      executed = true;
-      document.getElementById("RPM-SLIDER").innerHTML = message;
-      document.getElementById("RPM-INPUT").innerHTML = message;
-    }
-  };
-})();
+  xmldoc = xmlResponse.getElementsByTagName("STATE");
+  message = xmldoc[0].firstChild.nodeValue;
+  motor_state = message;
+  if (motor_state == "ON") {
+    document.getElementById("STATE-BUTTON").innerHTML = "Стоп";
+    document.getElementById("TIME-BUTTON").disabled = true;
+    document.getElementById("TIME-DIS-BUTTON").disabled = true;
+  } else {
+    document.getElementById("STATE-BUTTON").innerHTML = "Старт";
+    document.getElementById("TIME-BUTTON").disabled = false;
+    document.getElementById("TIME-DIS-BUTTON").disabled = false;
+  }
+}
 
 function process() {
   if (xml.readyState == 0 || xml.readyState == 4) {
@@ -329,7 +339,7 @@ function process() {
   setTimeout("process()", 50);
 }
 
-  </script>
+    </script>
   </head>
 
   <body style="background-color: #eeeeee" onload="process()">
@@ -376,7 +386,9 @@ function process() {
         <div class="category" style="gap: 10px 0px">
           <div class="category-title">Задание параметров</div>
           <div class="param-div">
-            <div class="category-text">Скорость вращения барабана</div>
+            <div class="category-text">
+              Скорость вращения барабана (<span id="RPM-SPAN">0</span>)
+            </div>
             <input
               type="range"
               class="rpm-slider"
@@ -385,9 +397,9 @@ function process() {
               value="0"
               width="0%"
               id="RPM-SLIDE"
-              onmousedown="SliderMouseDown(this.value)"
-              onmouseup="SliderMouseUp(this.value)"
-              oninput="UpdateRPMSlider(this.value)"
+              onpointerdown="SliderMouseDown(this.value)"
+              onpointerup="SliderMouseUp(this.value)"
+              onpointermove="UpdateRPMSlider(this.value)"
             />
             <input
               type="number"
@@ -412,7 +424,7 @@ function process() {
               type="number"
               class="time-input"
               min="0"
-              max="23"
+              max="17"
               value="0"
               placeholder="час"
               id="TIME-HOUR"
@@ -440,6 +452,27 @@ function process() {
               id="TIME-SEC"
               oninput="UpdateSec(this.value)"
             />
+            <div class="time-control">
+              <button
+                type="button"
+                class="time-button"
+                id="TIME-BUTTON"
+                onclick="SetTimer()"
+              >
+                Задать время
+              </button>
+              <button
+                type="button"
+                class="time-button"
+                id="TIME-DIS-BUTTON"
+                onclick="DisableTimer()"
+              >
+                Сбросить
+              </button>
+            </div>
+            <div class="time-left">
+              Осталось времени: <span id="TIME-LEFT">00:00:00</span>
+            </div>
           </div>
         </div>
       </div>
@@ -470,4 +503,5 @@ function process() {
     </footer>
   </body>
 </html>
+
 )=====";

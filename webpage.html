@@ -2,7 +2,10 @@
 <html lang="ru" class="js-focus-visible">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=2.0" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
+    />
     <title>Панель управления барабанной установкой</title>
     <link rel="stylesheet" href="counter.css" />
     <script type="text/javascript" src="jaja.js"></script>
@@ -52,7 +55,9 @@
         <div class="category" style="gap: 10px 0px">
           <div class="category-title">Задание параметров</div>
           <div class="param-div">
-            <div class="category-text">Скорость вращения барабана</div>
+            <div class="category-text">
+              Скорость вращения барабана (<span id="RPM-SPAN">0</span>)
+            </div>
             <input
               type="range"
               class="rpm-slider"
@@ -61,9 +66,9 @@
               value="0"
               width="0%"
               id="RPM-SLIDE"
-              onmousedown="SliderMouseDown(this.value)"
-              onmouseup="SliderMouseUp(this.value)"
-              oninput="UpdateRPMSlider(this.value)"
+              onpointerdown="SliderMouseDown(this.value)"
+              onpointerup="SliderMouseUp(this.value)"
+              onpointermove="UpdateRPMSlider(this.value)"
             />
             <input
               type="number"
@@ -88,7 +93,7 @@
               type="number"
               class="time-input"
               min="0"
-              max="23"
+              max="17"
               value="0"
               placeholder="час"
               id="TIME-HOUR"
@@ -116,6 +121,27 @@
               id="TIME-SEC"
               oninput="UpdateSec(this.value)"
             />
+            <div class="time-control">
+              <button
+                type="button"
+                class="time-button"
+                id="TIME-BUTTON"
+                onclick="SetTimer()"
+              >
+                Задать время
+              </button>
+              <button
+                type="button"
+                class="time-button"
+                id="TIME-DIS-BUTTON"
+                onclick="DisableTimer()"
+              >
+                Сбросить
+              </button>
+            </div>
+            <div class="time-left">
+              Осталось времени: <span id="TIME-LEFT">00:00:00</span>
+            </div>
           </div>
         </div>
       </div>

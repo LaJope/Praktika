@@ -1,7 +1,6 @@
 html {
   font-family: Arial, Helvetica, sans-serif;
 }
-
 .footer {
   width: 100%;
   display: flex;
@@ -14,7 +13,6 @@ html {
   border-radius: 10px;
   background-color: blanchedalmond;
 }
-
 .header {
   width: 100%;
   display: flex;
@@ -26,7 +24,6 @@ html {
   border-radius: 10px;
   background-color: blanchedalmond;
 }
-
 .fixed-top {
   position: fixed;
   top: 0;
@@ -34,13 +31,11 @@ html {
   left: 0;
   z-index: 1030;
 }
-
 .header-title {
   font-size: 35px;
   font-weight: 600;
   text-wrap: inherit;
 }
-
 .time-and-date {
   display: grid;
   grid-template: 2 2;
@@ -49,16 +44,13 @@ html {
   font-weight: 500;
   text-align: center;
 }
-
 .heading {
   grid-row: 1;
   text-wrap: nowrap;
 }
-
 .header-data {
   grid-row: 2;
 }
-
 .container {
   margin-top: 170px;
   margin-bottom: 200px;
@@ -68,26 +60,22 @@ html {
   justify-content: center;
   column-gap: 40px;
 }
-
 .category {
   display: grid;
   justify-content: center;
   text-align: center;
   margin-bottom: 40px;
 }
-
 .category-title {
   font-size: 30px;
   font-weight: 600;
 }
-
 .param-div,
 table {
   border: solid 2px;
   border-radius: 10px;
   text-align: center;
 }
-
 th {
   padding: 5px;
   font-weight: 600;
@@ -95,40 +83,33 @@ th {
   border: 1px solid;
   border-radius: 10px;
 }
-
 td {
   padding: 5px;
   background-color: blanchedalmond;
   border: 1px solid;
   border-radius: 10px;
 }
-
 .param-div {
   padding: 10px;
   background-color: blanchedalmond;
 }
-
 .rpm-slider {
   display: block;
   width: 100%;
   background: red;
 }
-
 .category-text {
   margin-bottom: 5px;
 }
-
 .control-panel {
   display: grid;
   justify-content: center;
   text-align: center;
   margin-bottom: 0px;
 }
-
 .control-el {
   padding: 10px 0px;
 }
-
 .control-button {
   width: 80%;
   padding: 6px;
@@ -140,20 +121,17 @@ td {
   border-radius: 10px;
   border: solid 2px;
 }
-
 .control-button:disabled,
 .control-button[disabled] {
   border: 1px solid #999999;
   background-color: #cccccc;
   color: #666666;
 }
-
 .fixed-bottom {
   position: fixed;
   bottom: 0px;
   z-index: 1030;
 }
-
 .time-input {
   display: inline-block;
   width: 60px;
@@ -162,7 +140,6 @@ td {
   border: solid 2px;
   border-radius: 10px;
 }
-
 .rpm-input {
   display: inline-block;
   width: 60px;
@@ -171,7 +148,6 @@ td {
   border: solid 2px;
   border-radius: 10px;
 }
-
 .rpm-button {
   display: inline-block;
   width: 60%;
@@ -183,4 +159,20 @@ td {
   background-color: white;
   border-radius: 10px;
   border: solid 2px;
+}
+.time-control {
+  display: flex;
+  justify-content: center;
+  margin-top: 10px;
+  column-gap: 20px;
+}
+.time-button {
+  background-color: white;
+  border: solid 2px black;
+  border-radius: 10px;
+  padding: 4px 8px;
+  font-weight: 600;
+}
+.time-left {
+  margin-top: 10px;
 }
