@@ -8,8 +8,7 @@ const char PAGE_MAIN[] PROGMEM = R"=====(<!DOCTYPE html>
       content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
     />
     <title>Панель управления барабанной установкой</title>
-    <style>
-    html {
+    <style>html {
   font-family: Arial, Helvetica, sans-serif;
 }
 .footer {
@@ -187,14 +186,12 @@ td {
 .time-left {
   margin-top: 10px;
 }
-</style>
-    <script type="text/javascript">
-    var xml = createXmlHttpObject();
+
+    </style>
+    <script type="text/javascript">var xml = createXmlHttpObject();
+var xml = createXmlHttpObject();
 var speed_button = 0;
-var time_hour = 0;
-var time_min = 0;
-var time_sec = 0;
-var motor_state = "OFF";
+var motor_on = false;
 
 function createXmlHttpObject() {
   if (window.XMLHttpRequest) {
@@ -268,30 +265,38 @@ function UpdateRPMButton() {
   UpdateRPM(speed_button);
 }
 function UpdateHour(value) {
-  time_hour = value;
+  var xhttp = new XMLHttpRequest();
+  xhttp.open("PUT", "SET_TIMER_HOUR?VALUE=" + value, true);
+  xhttp.send();
 }
 function UpdateMin(value) {
-  time_min = value;
+  var xhttp = new XMLHttpRequest();
+  xhttp.open("PUT", "SET_TIMER_MIN?VALUE=" + value, true);
+  xhttp.send();
 }
 function UpdateSec(value) {
-  time_sec = value;
+  var xhttp = new XMLHttpRequest();
+  xhttp.open("PUT", "SET_TIMER_SEC?VALUE=" + value, true);
+  xhttp.send();
 }
 
 function SetTimer() {
   var xhttp = new XMLHttpRequest();
-  xhttp.open(
-    "PUT",
-    "SET_TIMER?VALUE=" + (time_hour * 3600 + time_min * 60 + time_sec),
-    true
-  );
+  xhttp.open("PUT", "SET_TIMER", true);
+  document.getElementById("TIME-HOUR").disabled = true;
+  document.getElementById("TIME-MIN").disabled = true;
+  document.getElementById("TIME-SEC").disabled = true;
   xhttp.send();
 }
 function DisableTimer() {
   var xhttp = new XMLHttpRequest();
   xhttp.open("PUT", "DISABLE_TIMER", true);
-  document.getElementById("TIME-HOUR").value = "0";
-  document.getElementById("TIME-MIN").value = "0";
-  document.getElementById("TIME-SEC").value = "0";
+  document.getElementById("TIME-HOUR").value = 0;
+  document.getElementById("TIME-MIN").value = 0;
+  document.getElementById("TIME-SEC").value = 0;
+  document.getElementById("TIME-HOUR").disabled = false;
+  document.getElementById("TIME-MIN").disabled = false;
+  document.getElementById("TIME-SEC").disabled = false;
   xhttp.send();
 }
 
@@ -318,8 +323,8 @@ function response() {
 
   xmldoc = xmlResponse.getElementsByTagName("STATE");
   message = xmldoc[0].firstChild.nodeValue;
-  motor_state = message;
-  if (motor_state == "ON") {
+  motor_on = message === "ON";
+  if (motor_on) {
     document.getElementById("STATE-BUTTON").innerHTML = "Стоп";
     document.getElementById("TIME-BUTTON").disabled = true;
     document.getElementById("TIME-DIS-BUTTON").disabled = true;
@@ -328,6 +333,10 @@ function response() {
     document.getElementById("TIME-BUTTON").disabled = false;
     document.getElementById("TIME-DIS-BUTTON").disabled = false;
   }
+
+  xmldoc = xmlResponse.getElementsByTagName("TIME-LEFT");
+  message = xmldoc[0].firstChild.nodeValue;
+  document.getElementById("TIME-LEFT").innerHTML = message;
 }
 
 function process() {
@@ -339,7 +348,7 @@ function process() {
   setTimeout("process()", 50);
 }
 
-    </script>
+</script>
   </head>
 
   <body style="background-color: #eeeeee" onload="process()">
