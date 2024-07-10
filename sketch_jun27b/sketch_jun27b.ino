@@ -23,7 +23,7 @@
 
 // Используется для дебага.
 // Чтобы перейти к собственной точке доступа ESP закомментируйте #define строку
-// #define ESP_DEBUG
+#define ESP_DEBUG
 const char *LOCAL_SSID = "DancingCow";
 const char *LOCAL_PASS = "perfectwe";
 
@@ -54,8 +54,10 @@ enum class Rotation : byte
 };
 Rotation Motor_Rotation = Rotation::CLOCKWISE;
 
-std::chrono::seconds Time = 0;
-// std::chrono::steady_clock::time_point StartTime = std::chrono::steady_clock::now();
+std::chrono::hours Time_Hour = std::chrono::hours(0);
+std::chrono::minutes Time_Min = std::chrono::minutes(0);
+std::chrono::seconds Time_Sec = std::chrono::seconds(0);
+std::chrono::steady_clock::time_point StartTime = std::chrono::steady_clock::now();
 bool Timer_On = false;
 
 char XML[2048];
@@ -114,7 +116,7 @@ void setup()
   server.on("/", SendWebsite);
   server.on("/xml", SendXML);
   server.on("/UPDATE_RPM", UpdateRPM);
- // server.on("/SET_TIMER", SetTimer);
+  server.on("/SET_TIMER", SetTimer);
   server.on("/SET_TIMER_HOUR", SetTimerHour);
   server.on("/SET_TIMER_MIN", SetTimerMin);
   server.on("/SET_TIMER_SEC", SetTimerSec);
@@ -134,7 +136,7 @@ void loop()
     SensorUpdate = millis();
     Voltage_V = Sensor.getBusVoltage_V();
     Current_mA = Sensor.getCurrent_mA();
-//    CheckTime();
+    //    CheckTime();
   }
   server.handleClient();
 }
@@ -156,12 +158,17 @@ void SendXML()
   strcat(XML, buf);
   sprintf(buf, "<STATE>%s</STATE>\n", (Motor_On ? "ON" : "OFF"));
   strcat(XML, buf);
-//  uint32_t time_left = (std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now() - StartTime) - std::chrono::seconds(Time)).count();
-//  sprintf(buf, "<TIME-LEFT>%d:%d:%d</TIME-LEFT>\n",
-//          time_left / 3600,
-//          time_left % 3600 / 60,
-//          time_left % 60);
-//  strcat(XML, buf);
+
+  uint32_t time_left =
+      (std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now() - StartTime) - (std::chrono::seconds(Time_Hour) +
+                                                                                                         std::chrono::seconds(Time_Min) +
+                                                                                                         std::chrono::seconds(Time_Sec)))
+          .count();
+  sprintf(buf, "<TIME-LEFT>%d:%d:%d</TIME-LEFT>\n",
+          time_left / 3600,
+          time_left % 3600 / 60,
+          time_left % 60);
+  strcat(XML, buf);
   sprintf(buf, "</Data>");
   strcat(XML, buf);
   server.send(400, "text/xml", XML);
@@ -178,39 +185,35 @@ void UpdateRPM()
   Serial.println(Motor_Speed);
 }
 
-// void SetTimer()
-// {
-//   String new_time = server.arg("VALUE");
-//   Time = static_cast<uint32_t>(new_time.toInt());
-//   StartTime = std::chrono::steady_clock::now();
-//   Timer_On = true;
-//   server.send(200, "text/plain", "");
-//   Serial.print("Updating TIME! ");
-//   Serial.println(Time);
-// }
+void SetTimer()
+{
+  Timer_On = true;
+  server.send(200, "text/plain", "");
+  Serial.print("TIMER IS ON!");
+}
 void SetTimerHour()
 {
   String new_hour = server.arg("VALUE");
-  Time = Time % 3600 + new_hour.toInt() * 3600;
-  server.send(200, "text/plain", "");
+  Time_Hour = std::chrono::hours(new_hour.toInt());
+  server.send(1, "text/plain", "");
   Serial.print("Updating TIME HOUR! ");
-  Serial.println(Time);
+  Serial.println(Time_Hour.count());
 }
 void SetTimerMin()
 {
-  String new_hour = server.arg("VALUE");
-  Time = (Time - Time % 3600 + Time % 60) + new_hour.toInt() * 60;
-  server.send(200, "text/plain", "");
+  String new_min = server.arg("VALUE");
+  Time_Min = std::chrono::minutes(new_min.toInt());
+  server.send(1, "text/plain", "");
   Serial.print("Updating TIME MIN! ");
-  Serial.println(Time);
+  Serial.println(Time_Min.count());
 }
 void SetTimerSec()
 {
-  String new_hour = server.arg("VALUE");
-  Time = (Time - Time % 60) + new_hour.toInt();
-  server.send(200, "text/plain", "");
+  String new_sec = server.arg("VALUE");
+  Time_Sec = std::chrono::seconds(new_sec.toInt());
+  server.send(1, "text/plain", "");
   Serial.print("Updating TIME SEC! ");
-  Serial.println(Time);
+  Serial.println(Time_Sec.count());
 }
 void DisableTimer()
 {
@@ -231,7 +234,7 @@ void ProcessState()
   }
   else
   {
-//    StartTime = std::chrono::steady_clock::now();
+    StartTime = std::chrono::steady_clock::now();
     MotorRotation();
   }
   server.send(200, "text/plain", "");
@@ -291,12 +294,20 @@ void MotorRotation()
   }
 }
 
-// void CheckTime()
-// {
-//   if (Motor_On && Timer_On && std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now() - StartTime) >= std::chrono::seconds(Time))
-//   {
-//     Motor_On = false;
-//     Timer_On = false;
-//     Time = 0;
-//   }
-// }
+void CheckTime()
+{
+  if (Motor_On &&
+      Timer_On &&
+      std::chrono::duration_cast<std::chrono::seconds>(
+          std::chrono::steady_clock::now() - StartTime) >=
+          (std::chrono::seconds(Time_Hour) +
+           std::chrono::seconds(Time_Min) +
+           std::chrono::seconds(Time_Sec)))
+  {
+    Motor_On = false;
+    Timer_On = false;
+    Time_Hour = std::chrono::hours(0);
+    Time_Min = std::chrono::minutes(0);
+    Time_Sec = std::chrono::seconds(0);
+  }
+}
