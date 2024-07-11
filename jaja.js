@@ -1,9 +1,10 @@
 var xml = createXmlHttpObject();
 var speed_button = 0;
+var motor_on = false;
+
 var time_hour = 0;
 var time_min = 0;
 var time_sec = 0;
-var motor_state = "OFF";
 
 function createXmlHttpObject() {
   if (window.XMLHttpRequest) {
@@ -24,13 +25,9 @@ function ReverseButton() {
   var xhttp = new XMLHttpRequest();
   document.getElementById("REVERSE-BUTTON").disabled = true;
   xhttp.onreadystatechange = function () {
-    if (
-      this.readyState == 4 &&
-      this.status == 200 &&
-      this.responseText === "DONE"
-    )
-      document.getElementById("REVERSE-BUTTON").disabled = false;
-    sleep(100);
+    if (this.readyState == 4 && this.status == 200)
+      if (this.responseText == "DONE")
+        document.getElementById("REVERSE-BUTTON").disabled = false;
   };
   xhttp.open("PUT", "REVERSE_BUTTON", false);
   xhttp.send();
@@ -66,7 +63,7 @@ function UpdateRPM(value) {
       document.getElementById("RPM-INPUT").value = speed_button;
     }
   };
-  xhttp.open("PUT", "UPDATE_RPM?VALUE=" + speed_button, true);
+  xhttp.open("PUT", "UPDATE_RPM?SPEED=" + speed_button, false);
   xhttp.send();
 }
 
@@ -75,6 +72,8 @@ function UpdateRPMInput(value) {
 }
 function UpdateRPMButton() {
   UpdateRPM(speed_button);
+  document.getElementById("RPM-SLIDE").value = speed_button;
+  document.getElementById("RPM-SPAN").innerHTML = speed_button;
 }
 function UpdateHour(value) {
   time_hour = value;
@@ -88,20 +87,34 @@ function UpdateSec(value) {
 
 function SetTimer() {
   var xhttp = new XMLHttpRequest();
-  xhttp.open(
-    "PUT",
-    "SET_TIMER?VALUE=" + (time_hour * 3600 + time_min * 60 + time_sec),
-    true
-  );
+  xhttp.open("PUT", "SET_TIMER_HOUR?HOUR=" + time_hour, false);
   xhttp.send();
+  xhttp = new XMLHttpRequest();
+  xhttp.open("PUT", "SET_TIMER_MIN?MIN=" + time_min, false);
+  xhttp.send();
+  xhttp = new XMLHttpRequest();
+  xhttp.open("PUT", "SET_TIMER_SEC?SEC=" + time_sec, false);
+  xhttp.send();
+  xhttp = new XMLHttpRequest();
+  xhttp.open("PUT", "SET_TIMER", false);
+  xhttp.send();
+
+  document.getElementById("TIME-HOUR").disabled = true;
+  document.getElementById("TIME-MIN").disabled = true;
+  document.getElementById("TIME-SEC").disabled = true;
+  document.getElementById("TIME-BUTTON").disabled = true;
 }
 function DisableTimer() {
   var xhttp = new XMLHttpRequest();
-  xhttp.open("PUT", "DISABLE_TIMER", true);
-  document.getElementById("TIME-HOUR").value = "0";
-  document.getElementById("TIME-MIN").value = "0";
-  document.getElementById("TIME-SEC").value = "0";
+  xhttp.open("PUT", "DISABLE_TIMER", false);
   xhttp.send();
+
+  document.getElementById("TIME-HOUR").value = 0;
+  document.getElementById("TIME-MIN").value = 0;
+  document.getElementById("TIME-SEC").value = 0;
+  document.getElementById("TIME-HOUR").disabled = false;
+  document.getElementById("TIME-MIN").disabled = false;
+  document.getElementById("TIME-SEC").disabled = false;
 }
 
 function response() {
@@ -127,16 +140,26 @@ function response() {
 
   xmldoc = xmlResponse.getElementsByTagName("STATE");
   message = xmldoc[0].firstChild.nodeValue;
-  motor_state = message;
-  if (motor_state == "ON") {
+  motor_on = message === "ON";
+  if (motor_on) {
     document.getElementById("STATE-BUTTON").innerHTML = "Стоп";
     document.getElementById("TIME-BUTTON").disabled = true;
     document.getElementById("TIME-DIS-BUTTON").disabled = true;
+    document.getElementById("TIME-HOUR").disabled = true;
+    document.getElementById("TIME-MIN").disabled = true;
+    document.getElementById("TIME-SEC").disabled = true;
   } else {
     document.getElementById("STATE-BUTTON").innerHTML = "Старт";
     document.getElementById("TIME-BUTTON").disabled = false;
     document.getElementById("TIME-DIS-BUTTON").disabled = false;
+    document.getElementById("TIME-HOUR").disabled = false;
+    document.getElementById("TIME-MIN").disabled = false;
+    document.getElementById("TIME-SEC").disabled = false;
   }
+
+  xmldoc = xmlResponse.getElementsByTagName("TIME-LEFT");
+  message = xmldoc[0].firstChild.nodeValue;
+  document.getElementById("TIME-LEFT").innerHTML = message;
 }
 
 function process() {
@@ -145,5 +168,5 @@ function process() {
     xml.onreadystatechange = response;
     xml.send();
   }
-  setTimeout("process()", 50);
+  setTimeout("process()", 200);
 }
