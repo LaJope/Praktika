@@ -17,7 +17,7 @@ function createXmlHttpObject() {
 
 function StateButton() {
   var xhttp = new XMLHttpRequest();
-  xhttp.open("PUT", "STATE_BUTTON", false);
+  xhttp.open("POST", "STATE_BUTTON", false);
   xhttp.send();
 }
 
@@ -29,7 +29,7 @@ function ReverseButton() {
       if (this.responseText == "DONE")
         document.getElementById("REVERSE-BUTTON").disabled = false;
   };
-  xhttp.open("PUT", "REVERSE_BUTTON", false);
+  xhttp.open("POST", "REVERSE_BUTTON", false);
   xhttp.send();
 }
 
@@ -96,7 +96,7 @@ function SetTimer() {
   xhttp.open("PUT", "SET_TIMER_SEC?SEC=" + time_sec, false);
   xhttp.send();
   xhttp = new XMLHttpRequest();
-  xhttp.open("PUT", "SET_TIMER", false);
+  xhttp.open("POST", "SET_TIMER", false);
   xhttp.send();
 
   document.getElementById("TIME-HOUR").disabled = true;
@@ -106,7 +106,7 @@ function SetTimer() {
 }
 function DisableTimer() {
   var xhttp = new XMLHttpRequest();
-  xhttp.open("PUT", "DISABLE_TIMER", false);
+  xhttp.open("POST", "DISABLE_TIMER", false);
   xhttp.send();
 
   document.getElementById("TIME-HOUR").value = 0;
@@ -164,9 +164,47 @@ function response() {
 
 function process() {
   if (xml.readyState == 0 || xml.readyState == 4) {
-    xml.open("PUT", "xml", true);
+    xml.open("GET", "xml", true);
     xml.onreadystatechange = response;
     xml.send();
   }
   setTimeout("process()", 200);
+  setTimeout("UpdateGraph()", 200);
+}
+
+let chartT = new Highcharts.Chart({
+  chart: { renderTo: "SPEED-CHART" },
+  title: { text: "BME280 Temperature" },
+  series: [
+    {
+      showInLegend: false,
+      data: [],
+    },
+  ],
+  plotOptions: {
+    line: { animation: false, dataLabels: { enabled: true } },
+    series: { color: "#059e8a" },
+  },
+  xAxis: { type: "datetime", dateTimeLabelFormats: { second: "%H:%M:%S" } },
+  yAxis: { title: { text: "Temperature (Celsius)" } },
+  credits: { enabled: false },
+});
+
+function UpdateGraph() {
+  chartT.series[0].addPoint([1, 2]);
+  // chartT.series[0].addPoint([1, 2], true, true, true);
+  // var xhttp = new XMLHttpRequest();
+  // xhttp.onreadystatechange = function () {
+  //   if (this.readyState == 4 && this.status == 200) {
+  //     var x = new Date().getTime(),
+  //       y = parseFloat(this.responseText);
+  //     if (chartT.series[0].data.length > 40) {
+  //       chartT.series[0].addPoint([x, y], true, true, true);
+  //     } else {
+  //       chartT.series[0].addPoint([x, y], true, false, true);
+  //     }
+  //   }
+  // };
+  // xhttp.open("GET", "/temperature", true);
+  // xhttp.send();
 }

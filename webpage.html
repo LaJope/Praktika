@@ -8,7 +8,8 @@
     />
     <title>Панель управления барабанной установкой</title>
     <link rel="stylesheet" href="counter.css" />
-    <script type="text/javascript" src="jaja.js"></script>
+    <script src="jaja.js"></script>
+    <script src="https://code.highcharts.com/highcharts.js"></script>
   </head>
 
   <body style="background-color: #eeeeee" onload="process()">
@@ -25,124 +26,130 @@
     </header>
     <main>
       <div class="container">
-        <div class="category">
-          <div class="category-title">Показания датчиков</div>
-          <div>
-            <table>
-              <tr>
-                <th colspan="1" class="heading" style="font-size: 20px">
-                  Измерение
-                </th>
-                <th colspan="1" class="heading" style="font-size: 20px">
-                  Показание датчика
-                </th>
-              </tr>
-              <tr>
-                <td class="table-text">RPM (от 0 до 255)</td>
-                <td class="table-data" id="RPM">0</td>
-              </tr>
-              <tr>
-                <td class="table-text">Сила тока</td>
-                <td class="table-data" id="CURR">0</td>
-              </tr>
-              <tr>
-                <td class="table-text">Напряжение</td>
-                <td class="table-data" id="VOLT">0</td>
-              </tr>
-            </table>
+        <div class="top-row">
+          <div class="category">
+            <div class="category-title">Показания датчиков</div>
+            <div>
+              <table>
+                <tr>
+                  <th colspan="1" class="heading" style="font-size: 20px">
+                    Измерение
+                  </th>
+                  <th colspan="1" class="heading" style="font-size: 20px">
+                    Показание датчика
+                  </th>
+                </tr>
+                <tr>
+                  <td class="table-text">RPM (от 0 до 255)</td>
+                  <td class="table-data" id="RPM">0</td>
+                </tr>
+                <tr>
+                  <td class="table-text">Сила тока</td>
+                  <td class="table-data" id="CURR">0</td>
+                </tr>
+                <tr>
+                  <td class="table-text">Напряжение</td>
+                  <td class="table-data" id="VOLT">0</td>
+                </tr>
+              </table>
+            </div>
+          </div>
+          <div class="category" style="gap: 10px 0px">
+            <div class="category-title">Задание параметров</div>
+            <div class="param-div">
+              <div class="category-text">
+                Скорость вращения барабана (<span id="RPM-SPAN">0</span>)
+              </div>
+              <input
+                type="range"
+                class="rpm-slider"
+                min="0"
+                max="255"
+                value="0"
+                width="0%"
+                id="RPM-SLIDE"
+                onpointerdown="SliderMouseDown(this.value)"
+                onpointerup="SliderMouseUp(this.value)"
+                onpointermove="UpdateRPMSlider(this.value)"
+              />
+              <input
+                type="number"
+                class="rpm-input"
+                min="0"
+                max="255"
+                value="0"
+                id="RPM-INPUT"
+                oninput="UpdateRPMInput(this.value)"
+              />
+              <button
+                type="button"
+                class="rpm-button"
+                onclick="UpdateRPMButton()"
+              >
+                Обновить скорость
+              </button>
+            </div>
+            <div class="param-div">
+              <div class="category-text">Время вращения барабана</div>
+              <input
+                type="number"
+                class="time-input"
+                min="0"
+                max="17"
+                value="0"
+                placeholder="час"
+                id="TIME-HOUR"
+                oninput="UpdateHour(this.value)"
+              />
+              <span>:</span>
+              <input
+                type="number"
+                class="time-input"
+                min="0"
+                max="59"
+                value="0"
+                placeholder="мин"
+                id="TIME-MIN"
+                oninput="UpdateMin(this.value)"
+              />
+              <span>:</span>
+              <input
+                type="number"
+                class="time-input"
+                min="0"
+                max="59"
+                value="0"
+                placeholder="сек"
+                id="TIME-SEC"
+                oninput="UpdateSec(this.value)"
+              />
+              <div class="time-control">
+                <button
+                  type="button"
+                  class="time-button"
+                  id="TIME-BUTTON"
+                  onclick="SetTimer()"
+                >
+                  Задать время
+                </button>
+                <button
+                  type="button"
+                  class="time-button"
+                  id="TIME-DIS-BUTTON"
+                  onclick="DisableTimer()"
+                >
+                  Сбросить
+                </button>
+              </div>
+              <div class="time-left">
+                Осталось времени: <span id="TIME-LEFT">00:00:00</span>
+              </div>
+            </div>
           </div>
         </div>
-        <div class="category" style="gap: 10px 0px">
-          <div class="category-title">Задание параметров</div>
-          <div class="param-div">
-            <div class="category-text">
-              Скорость вращения барабана (<span id="RPM-SPAN">0</span>)
-            </div>
-            <input
-              type="range"
-              class="rpm-slider"
-              min="0"
-              max="255"
-              value="0"
-              width="0%"
-              id="RPM-SLIDE"
-              onpointerdown="SliderMouseDown(this.value)"
-              onpointerup="SliderMouseUp(this.value)"
-              onpointermove="UpdateRPMSlider(this.value)"
-            />
-            <input
-              type="number"
-              class="rpm-input"
-              min="0"
-              max="255"
-              value="0"
-              id="RPM-INPUT"
-              oninput="UpdateRPMInput(this.value)"
-            />
-            <button
-              type="button"
-              class="rpm-button"
-              onclick="UpdateRPMButton()"
-            >
-              Обновить скорость
-            </button>
-          </div>
-          <div class="param-div">
-            <div class="category-text">Время вращения барабана</div>
-            <input
-              type="number"
-              class="time-input"
-              min="0"
-              max="17"
-              value="0"
-              placeholder="час"
-              id="TIME-HOUR"
-              oninput="UpdateHour(this.value)"
-            />
-            <span>:</span>
-            <input
-              type="number"
-              class="time-input"
-              min="0"
-              max="59"
-              value="0"
-              placeholder="мин"
-              id="TIME-MIN"
-              oninput="UpdateMin(this.value)"
-            />
-            <span>:</span>
-            <input
-              type="number"
-              class="time-input"
-              min="0"
-              max="59"
-              value="0"
-              placeholder="сек"
-              id="TIME-SEC"
-              oninput="UpdateSec(this.value)"
-            />
-            <div class="time-control">
-              <button
-                type="button"
-                class="time-button"
-                id="TIME-BUTTON"
-                onclick="SetTimer()"
-              >
-                Задать время
-              </button>
-              <button
-                type="button"
-                class="time-button"
-                id="TIME-DIS-BUTTON"
-                onclick="DisableTimer()"
-              >
-                Сбросить
-              </button>
-            </div>
-            <div class="time-left">
-              Осталось времени: <span id="TIME-LEFT">00:00:00</span>
-            </div>
-          </div>
+        <div class="category">
+          <div class="category-title">Графики</div>
+          <div class="chart" id="SPEED-CHART"></div>
         </div>
       </div>
     </main>

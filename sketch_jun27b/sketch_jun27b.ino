@@ -16,10 +16,10 @@
 
 // Пины для управления мотором спомощью L298N.
 // Пин 3 отвечает за управление скоростью мотора.
-#define PIN_MOTOR_SPEED 25  // 3
+#define PIN_MOTOR_SPEED 25 // 3
 // Пины 4-5 отвечают за направление вращения мотора.
-#define PIN_MOTOR_1 32  // 4
-#define PIN_MOTOR_2 33  // 5
+#define PIN_MOTOR_1 32 // 4
+#define PIN_MOTOR_2 33 // 5
 
 // Используется для дебага.
 // Чтобы перейти к собственной точке доступа ESP закомментируйте #define строку
@@ -47,7 +47,8 @@ uint32_t SensorUpdate = 0;
 uint8_t Motor_Speed = 0;
 bool Motor_On = false;
 
-enum class Rotation : byte {
+enum class Rotation : byte
+{
   CLOCKWISE = 0,
   ANTI_CLOCKWISE = 1
 };
@@ -73,7 +74,8 @@ IPAddress ip;
 
 WebServer server(80);
 
-void setup() {
+void setup()
+{
   Serial.begin(115200);
 
   disableCore1WDT();
@@ -96,7 +98,8 @@ void setup() {
 
 #ifdef ESP_DEBUG
   WiFi.begin(LOCAL_SSID, LOCAL_PASS);
-  while (WiFi.status() != WL_CONNECTED) {
+  while (WiFi.status() != WL_CONNECTED)
+  {
     delay(500);
   }
   Serial.print("IP address: ");
@@ -110,24 +113,31 @@ void setup() {
   delay(100);
 #endif
 
-  server.on("/", SendWebsite);
-  server.on("/xml", SendXML);
-  server.on("/UPDATE_RPM", UpdateRPM);
-  server.on("/SET_TIMER", SetTimer);
-  server.on("/SET_TIMER_HOUR", SetTimerHour);
-  server.on("/SET_TIMER_MIN", SetTimerMin);
-  server.on("/SET_TIMER_SEC", SetTimerSec);
-  server.on("/DISABLE_TIMER", DisableTimer);
-  server.on("/STATE_BUTTON", ProcessState);
-  server.on("/REVERSE_BUTTON", ProcessReverse);
+  server.on("/", HTTP_GET, SendWebsite);
+  server.on("/xml", HTTP_GET, SendXML);
+  server.on("/UPDATE_RPM", HTTP_PUT, UpdateRPM);
+  server.on("/SET_TIMER", HTTP_POST, SetTimer);
+  server.on("/SET_TIMER_HOUR", HTTP_PUT, SetTimerHour);
+  server.on("/SET_TIMER_MIN", HTTP_PUT, SetTimerMin);
+  server.on("/SET_TIMER_SEC", HTTP_PUT, SetTimerSec);
+  server.on("/DISABLE_TIMER", HTTP_POST, DisableTimer);
+  server.on("/STATE_BUTTON", HTTP_POST, ProcessState);
+  server.on("/REVERSE_BUTTON", HTTP_POST, ProcessReverse);
 
   server.begin();
 
   Serial.println("Server Started!");
 }
 
-void loop() {
-  if ((millis() - SensorUpdate) >= SensorUpdateTime) {
+void temp()
+{
+  server.send(200, "text/plain", "1");
+}
+
+void loop()
+{
+  if ((millis() - SensorUpdate) >= SensorUpdateTime)
+  {
     SensorUpdate = millis();
     Voltage_V = Sensor.getBusVoltage_V();
     Current_mA = Sensor.getCurrent_mA();
@@ -136,13 +146,14 @@ void loop() {
   server.handleClient();
 }
 
-void SendWebsite() {
+void SendWebsite()
+{
   server.send(200, "text/html", PAGE_MAIN);
   Serial.println("Sending HTML!");
 }
 
-void SendXML() {
-  Serial.println("XML");
+void SendXML()
+{
   strcpy(XML, "<?xml version='1.0'?>\n<Data>\n");
   sprintf(buf, "<RPM>%d</RPM>\n", Motor_Speed);
   strcat(XML, buf);
@@ -157,27 +168,19 @@ void SendXML() {
   std::chrono::seconds temp_elapsed_time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now() - StartTime);
   uint32_t time_left = (temp_all_time >= temp_elapsed_time) ? (temp_all_time - temp_elapsed_time).count() : 0;
 
-  // uint32_t time_left =
-  //     (std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now() - StartTime) - (std::chrono::seconds(Time_Hour) +
-  //                                                                                                        std::chrono::seconds(Time_Min) +
-  //                                                                                                        std::chrono::seconds(Time_Sec)))
-  //         .count();
-  // sprintf(buf, "<TIME-LEFT>%02d:%02d:%02d</TIME-LEFT>\n", time_left / 3600, time_left % 3600 / 60, time_left % 60);
   sprintf(buf, "<TIME-LEFT>%02d:", time_left / 3600);
   strcat(XML, buf);
   sprintf(buf, "%02d:", time_left % 3600 / 60);
   strcat(XML, buf);
   sprintf(buf, "%02d</TIME-LEFT>\n", time_left % 60);
   strcat(XML, buf);
-  // sprintf(buf, "<TIMER>%d:%d:%d</TIMER>\n", Time_Hour.count(), Time_Min.count(), Time_Sec.count());
-  // strcat(XML, buf);
   sprintf(buf, "</Data>");
   strcat(XML, buf);
   server.send(200, "text/xml", XML);
-  // Serial.println(XML);
 }
 
-void UpdateRPM() {
+void UpdateRPM()
+{
   String new_speed = server.arg("SPEED");
   Motor_Speed = new_speed.toInt();
   // analogWrite(PIN_MOTOR_SPEED, Motor_Speed);
@@ -187,57 +190,59 @@ void UpdateRPM() {
   Serial.println(Motor_Speed);
 }
 
-void SetTimer() {
+void SetTimer()
+{
   Timer_On = true;
   server.send(200, "text/plain", "");
-  Serial.print("TIMER IS ON!");
 }
-void SetTimerHour() {
+void SetTimerHour()
+{
   String new_hour = server.arg("HOUR");
   Time_Hour = std::chrono::hours(new_hour.toInt());
   server.send(200, "text/plain", "");
-  Serial.print("Updating TIME HOUR! ");
-  Serial.println(Time_Hour.count());
 }
-void SetTimerMin() {
+void SetTimerMin()
+{
   String new_min = server.arg("MIN");
   Time_Min = std::chrono::minutes(new_min.toInt());
   server.send(200, "text/plain", "");
-  Serial.print("Updating TIME MIN! ");
-  Serial.println(Time_Min.count());
 }
-void SetTimerSec() {
+void SetTimerSec()
+{
   String new_sec = server.arg("SEC");
   Time_Sec = std::chrono::seconds(new_sec.toInt());
   server.send(200, "text/plain", "");
-  Serial.print("Updating TIME SEC! ");
-  Serial.println(Time_Sec.count());
 }
-void DisableTimer() {
+void DisableTimer()
+{
   Timer_On = false;
   Time_Hour = std::chrono::hours(0);
   Time_Min = std::chrono::minutes(0);
   Time_Sec = std::chrono::seconds(0);
   server.send(200, "text/plain", "");
-  Serial.println("Timer disabled");
 }
 
-void ProcessState() {
+void ProcessState()
+{
   Serial.println("STATE BUTTON!");
   Motor_On ^= 1;
-  if (Motor_On == false) {
+  if (Motor_On == false)
+  {
     SlowDown(0);
     // analogWrite(PIN_MOTOR_SPEED, Motor_Speed);
     // digitalWrite(PIN_MOTOR_1, LOW);
     // digitalWrite(PIN_MOTOR_2, LOW);u
-  } else {
+  }
+  else
+  {
     StartTime = std::chrono::steady_clock::now();
     MotorRotation();
   }
   server.send(200, "text/plain", "");
 }
 
-void ProcessReverse() {
+void ProcessReverse()
+{
   Serial.println("Reverse START");
   uint8_t temp_speed = Motor_Speed;
   SlowDown(0);
@@ -249,9 +254,11 @@ void ProcessReverse() {
   Serial.println("Reverse STOP");
 }
 
-void SpeedUp(uint8_t aim_speed) {
+void SpeedUp(uint8_t aim_speed)
+{
   aim_speed = (aim_speed > 255) ? 255 : aim_speed;
-  while (Motor_Speed < aim_speed - 20) {
+  while (Motor_Speed < aim_speed - 20)
+  {
     Motor_Speed += 20;
     // analogWrite(PIN_MOTOR_SPEED, Motor_Speed);
     delay(SpeedChangeTime);
@@ -261,9 +268,11 @@ void SpeedUp(uint8_t aim_speed) {
   // analogWrite(PIN_MOTOR_SPEED, Motor_Speed);
 }
 
-void SlowDown(uint8_t aim_speed) {
+void SlowDown(uint8_t aim_speed)
+{
   aim_speed = (aim_speed < 0) ? 0 : aim_speed;
-  while (Motor_Speed > aim_speed + 20) {
+  while (Motor_Speed > aim_speed + 20)
+  {
     Motor_Speed -= 20;
     // analogWrite(PIN_MOTOR_SPEED, Motor_Speed);
     delay(SpeedChangeTime);
@@ -273,21 +282,25 @@ void SlowDown(uint8_t aim_speed) {
   // analogWrite(PIN_MOTOR_SPEED, Motor_Speed);
 }
 
-void MotorRotation() {
-  switch (Motor_Rotation) {
-    case (Rotation::CLOCKWISE):
-      // digitalWrite(PIN_MOTOR_1, LOW);
-      // digitalWrite(PIN_MOTOR_2, HIGH);
-      break;
-    case (Rotation::ANTI_CLOCKWISE):
-      // digitalWrite(PIN_MOTOR_1, HIGH);
-      // digitalWrite(PIN_MOTOR_2, LOW);
-      break;
+void MotorRotation()
+{
+  switch (Motor_Rotation)
+  {
+  case (Rotation::CLOCKWISE):
+    // digitalWrite(PIN_MOTOR_1, LOW);
+    // digitalWrite(PIN_MOTOR_2, HIGH);
+    break;
+  case (Rotation::ANTI_CLOCKWISE):
+    // digitalWrite(PIN_MOTOR_1, HIGH);
+    // digitalWrite(PIN_MOTOR_2, LOW);
+    break;
   }
 }
 
-void CheckTime() {
-  if (Motor_On && Timer_On && std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now() - StartTime) >= (std::chrono::seconds(Time_Hour) + std::chrono::seconds(Time_Min) + std::chrono::seconds(Time_Sec))) {
+void CheckTime()
+{
+  if (Motor_On && Timer_On && std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now() - StartTime) >= (std::chrono::seconds(Time_Hour) + std::chrono::seconds(Time_Min) + std::chrono::seconds(Time_Sec)))
+  {
     Motor_On = false;
     SlowDown(0);
     Timer_On = false;
