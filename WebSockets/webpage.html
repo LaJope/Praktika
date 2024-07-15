@@ -12,7 +12,7 @@
     <script src="https://code.highcharts.com/highcharts.js"></script>
   </head>
 
-  <body style="background-color: #eeeeee" onload="process()">
+  <body style="background-color: #eeeeee">
     <header>
       <div class="header fixed-top">
         <div class="header-title">Панель управления</div>
@@ -68,9 +68,9 @@
                 value="0"
                 width="0%"
                 id="RPM-SLIDE"
-                onpointerdown="SliderMouseDown(this.value)"
-                onpointerup="SliderMouseUp(this.value)"
-                onpointermove="UpdateRPMSlider(this.value)"
+                onpointerdown="RPMSliderPointerDown(this.value)"
+                onpointerup="RPMSliderPointerUp(this.value)"
+                onpointermove="RPMSliderPointerMove(this.value)"
               />
               <input
                 type="number"
@@ -79,8 +79,9 @@
                 max="255"
                 value="0"
                 id="RPM-INPUT"
+                oninput="UpdateRPMInput(this.value)"
               />
-              <button type="button" class="rpm-button" id="RPM-INPUT-BUTTON">
+              <button type="button" class="rpm-button" id="RPM-INPUT-BUTTON" onclick="UpdateRPMInputButton()">
                 Обновить скорость
               </button>
             </div>
@@ -123,7 +124,7 @@
                   type="button"
                   class="time-button"
                   id="TIME-BUTTON"
-                  onclick="SetTimer()"
+                  onclick="UpdateTimerButton()"
                 >
                   Задать время
                 </button>
@@ -131,7 +132,8 @@
                   type="button"
                   class="time-button"
                   id="TIME-DIS-BUTTON"
-                  onclick="DisableTimer()"
+                  onclick="DisableTimerButton()"
+                  disabled="true"
                 >
                   Сбросить
                 </button>
@@ -152,10 +154,10 @@
       <div class="footer control-panel fixed-bottom">
         <div>
           <div class="control-el">
-            <button type="button" class="control-button" id="STATE-BUTTON">
+            <button type="button" class="control-button" id="STATE-BUTTON" onclick="StateButton()">
               Старт
             </button>
-            <button type="button" class="control-button" id="REVERSE-BUTTON">
+            <button type="button" class="control-button" id="REVERSE-BUTTON" onclick="ReverseButton()">
               Смена направления вращения
             </button>
           </div>
